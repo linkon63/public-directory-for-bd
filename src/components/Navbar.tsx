@@ -60,6 +60,25 @@ export function Navbar({ onOpenAdmin, activeNav, setActiveNav, onSelectTab }: Na
     },
   ];
 
+  const handleNavItemClick = (item: (typeof navItems)[0]) => {
+    setActiveNav(item.id);
+    if (item.id === 'home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (item.tab) {
+      if (onSelectTab) {
+        onSelectTab(item.tab);
+      }
+      const section = document.getElementById('directory-search-section');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+    if (item.action) {
+      item.action();
+    }
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <header className="w-full bg-white/95 backdrop-blur-md sticky top-0 z-50 border-b border-neutral-100/80 shadow-xs">
       {/* Fluid Full-Width Container */}
@@ -91,15 +110,7 @@ export function Navbar({ onOpenAdmin, activeNav, setActiveNav, onSelectTab }: Na
             return (
               <button
                 key={item.id}
-                onClick={() => {
-                  setActiveNav(item.id);
-                  if (item.tab && onSelectTab) {
-                    onSelectTab(item.tab);
-                  }
-                  if (item.action) {
-                    item.action();
-                  }
-                }}
+                onClick={() => handleNavItemClick(item)}
                 className={`relative py-2 text-xs 2xl:text-sm transition-colors duration-150 font-medium cursor-pointer whitespace-nowrap ${
                   isActive
                     ? 'text-[#008751] font-semibold'
@@ -227,16 +238,7 @@ export function Navbar({ onOpenAdmin, activeNav, setActiveNav, onSelectTab }: Na
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => {
-                setActiveNav(item.id);
-                if (item.tab && onSelectTab) {
-                  onSelectTab(item.tab);
-                }
-                if (item.action) {
-                  item.action();
-                }
-                setIsMobileMenuOpen(false);
-              }}
+              onClick={() => handleNavItemClick(item)}
               className={`block w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium ${
                 activeNav === item.id
                   ? 'bg-emerald-50 text-[#008751] font-bold'

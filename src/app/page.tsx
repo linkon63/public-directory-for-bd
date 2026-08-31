@@ -104,6 +104,7 @@ export default function Home() {
     query?: string;
   }) => {
     setSearchParams(params);
+    setActiveNav(params.tab === 'representatives' ? 'representatives' : 'officers');
     runFilter(params);
   };
 
@@ -123,7 +124,14 @@ export default function Home() {
   const handleNavTabSwitch = (tab: 'representatives' | 'officials') => {
     const updated = { ...searchParams, tab };
     setSearchParams(updated);
+    setActiveNav(tab === 'representatives' ? 'representatives' : 'officers');
     runFilter(updated);
+
+    // Smooth scroll down to directory search section
+    const searchSection = document.getElementById('directory-search-section');
+    if (searchSection) {
+      searchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const handleOpenAssistance = (person: PersonRecord) => {
@@ -162,7 +170,7 @@ export default function Home() {
         <EmergencyHotlineBar />
 
         {/* 4-Dropdown Search Card */}
-        <SearchCard onSearch={handleSearch} />
+        <SearchCard activeTab={searchParams.tab} onSearch={handleSearch} />
 
         {/* Dynamic Search Results */}
         <SearchResultsSection

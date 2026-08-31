@@ -15,6 +15,7 @@ import {
 import { BD_ADMIN_DATA } from '@/lib/bangladesh-data';
 
 interface SearchCardProps {
+  activeTab?: 'representatives' | 'officials';
   onSearch: (params: {
     tab: 'representatives' | 'officials';
     division: string;
@@ -34,11 +35,17 @@ const DISTRICT_METADATA: {
   Habiganj: { nameBangla: 'হবিগঞ্জ', badge: '৯টি উপজেলা', icon: '🏭' },
 };
 
-export function SearchCard({ onSearch }: SearchCardProps) {
-  const [activeTab, setActiveTab] = useState<'representatives' | 'officials'>('representatives');
+export function SearchCard({ onSearch, activeTab: propActiveTab = 'representatives' }: SearchCardProps) {
+  const [activeTab, setActiveTab] = useState<'representatives' | 'officials'>(propActiveTab);
   const [selectedDistrict, setSelectedDistrict] = useState<string>('');
   const [selectedUpazila, setSelectedUpazila] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  React.useEffect(() => {
+    if (propActiveTab && propActiveTab !== activeTab) {
+      setActiveTab(propActiveTab);
+    }
+  }, [propActiveTab]);
 
   const sylhetDistricts = Object.keys(BD_ADMIN_DATA['Sylhet'] || {});
 
@@ -117,7 +124,7 @@ export function SearchCard({ onSearch }: SearchCardProps) {
   const hasActiveFilters = Boolean(selectedDistrict || selectedUpazila || searchQuery);
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-2 pb-14">
+    <div id="directory-search-section" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-2 pb-14 scroll-mt-24">
       <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-xl shadow-emerald-950/5 border border-neutral-100">
         {/* Top Switcher Tabs */}
         <div className="flex flex-wrap items-center justify-between gap-3">

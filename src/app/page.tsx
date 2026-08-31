@@ -1,69 +1,203 @@
-import Image from "next/image";
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { TopAnnouncementBar } from '@/components/TopAnnouncementBar';
+import { Navbar } from '@/components/Navbar';
+import { HeroSection } from '@/components/HeroSection';
+import { EmergencyHotlineBar } from '@/components/EmergencyHotlineBar';
+import { SearchCard } from '@/components/SearchCard';
+import { SearchResultsSection } from '@/components/SearchResultsSection';
+import { AdminModal } from '@/components/AdminModal';
+import { HowItWorksModal } from '@/components/HowItWorksModal';
+import { OfficerDetailModal } from '@/components/OfficerDetailModal';
+import { SYLHET_DIRECTORY_DATA, PersonRecord } from '@/lib/bangladesh-data';
 
 export default function Home() {
+  const [activeNav, setActiveNav] = useState('home');
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
+  const [selectedOfficerForModal, setSelectedOfficerForModal] = useState<PersonRecord | null>(null);
+  const [officerForAssistance, setOfficerForAssistance] = useState<PersonRecord | null>(null);
+  const [adminRequestType, setAdminRequestType] = useState<string | undefined>(undefined);
+
+  const [searchParams, setSearchParams] = useState<{
+    tab: 'representatives' | 'officials';
+    division: string;
+    district: string;
+    upazila: string;
+    union: string;
+    query?: string;
+  }>({
+    tab: 'representatives',
+    division: 'Sylhet',
+    district: '',
+    upazila: '',
+    union: '',
+    query: '',
+  });
+
+  const [filteredResults, setFilteredResults] = useState<PersonRecord[]>([]);
+
+  // Function to filter records based on criteria
+  const runFilter = (params: {
+    tab: 'representatives' | 'officials';
+    division: string;
+    district: string;
+    upazila: string;
+    union: string;
+    query?: string;
+  }) => {
+    const q = params.query?.trim().toLowerCase() || '';
+
+    const filtered = SYLHET_DIRECTORY_DATA.filter((item) => {
+      const matchRole =
+        params.tab === 'representatives'
+          ? item.roleType === 'representative'
+          : item.roleType === 'official';
+
+      const matchDivision = !params.division || item.division === params.division;
+      const matchDistrict = !params.district || item.district === params.district;
+      const matchUpazila = !params.upazila || item.upazila === params.upazila;
+      const matchUnion = !params.union || item.union === params.union;
+
+      let matchQuery = true;
+      if (q) {
+        matchQuery =
+          item.name.toLowerCase().includes(q) ||
+          item.nameBangla.includes(q) ||
+          item.designation.toLowerCase().includes(q) ||
+          item.designationBangla.includes(q) ||
+          item.office.toLowerCase().includes(q) ||
+          item.district.toLowerCase().includes(q) ||
+          (item.upazila?.toLowerCase().includes(q) ?? false);
+      }
+
+      return matchRole && matchDivision && matchDistrict && matchUpazila && matchUnion && matchQuery;
+    });
+
+    // Fallback: If exact deep filter yields empty but district matches, show district level records
+    if (filtered.length === 0 && params.district) {
+      const fallback = SYLHET_DIRECTORY_DATA.filter((item) => {
+        const matchRole =
+          params.tab === 'representatives'
+            ? item.roleType === 'representative'
+            : item.roleType === 'official';
+        return matchRole && item.district === params.district;
+      });
+      setFilteredResults(fallback.length > 0 ? fallback : filtered);
+    } else {
+      setFilteredResults(filtered);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    runFilter(searchParams);
+  }, []);
+
+  const handleSearch = (params: {
+    tab: 'representatives' | 'officials';
+    division: string;
+    district: string;
+    upazila: string;
+    union: string;
+    query?: string;
+  }) => {
+    setSearchParams(params);
+    runFilter(params);
+  };
+
+  const handleClearSearch = () => {
+    const reset = {
+      tab: searchParams.tab,
+      division: 'Sylhet',
+      district: '',
+      upazila: '',
+      union: '',
+      query: '',
+    };
+    setSearchParams(reset);
+    runFilter(reset);
+  };
+
+  const handleNavTabSwitch = (tab: 'representatives' | 'officials') => {
+    const updated = { ...searchParams, tab };
+    setSearchParams(updated);
+    runFilter(updated);
+  };
+
+  const handleOpenAssistance = (person: PersonRecord) => {
+    setOfficerForAssistance(person);
+    setAdminRequestType(undefined);
+    setIsAdminModalOpen(true);
+  };
+
+  const handleOpenAdminWithCategory = (category?: string) => {
+    setOfficerForAssistance(null);
+    setAdminRequestType(category);
+    setIsAdminModalOpen(true);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="min-h-screen flex flex-col justify-between bg-mint-gradient">
+      <div>
+        {/* Breaking News Government Service Marquee Ticker */}
+        <TopAnnouncementBar />
+
+        {/* Sticky Header Navbar */}
+        <Navbar
+          activeNav={activeNav}
+          setActiveNav={setActiveNav}
+          onOpenAdmin={handleOpenAdminWithCategory}
+          onSelectTab={handleNavTabSwitch}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+
+        {/* Hero Section */}
+        <HeroSection
+          onOpenAdmin={() => handleOpenAdminWithCategory()}
+          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+        />
+
+        {/* 24/7 Emergency & Public Helplines Bar */}
+        <EmergencyHotlineBar />
+
+        {/* 4-Dropdown Search Card */}
+        <SearchCard onSearch={handleSearch} />
+
+        {/* Dynamic Search Results */}
+        <SearchResultsSection
+          results={filteredResults}
+          searchParams={searchParams}
+          onClear={handleClearSearch}
+          onSelectOfficer={(person) => setSelectedOfficerForModal(person)}
+        />
+      </div>
+
+      {/* Admin Application Modal */}
+      <AdminModal
+        isOpen={isAdminModalOpen}
+        targetOfficer={officerForAssistance}
+        initialRequestType={adminRequestType}
+        onClose={() => {
+          setIsAdminModalOpen(false);
+          setOfficerForAssistance(null);
+          setAdminRequestType(undefined);
+        }}
+      />
+
+      {/* How it Works Modal */}
+      <HowItWorksModal
+        isOpen={isHowItWorksOpen}
+        onClose={() => setIsHowItWorksOpen(false)}
+      />
+
+      {/* Officer Full Profile Detail Modal */}
+      <OfficerDetailModal
+        person={selectedOfficerForModal}
+        isOpen={Boolean(selectedOfficerForModal)}
+        onClose={() => setSelectedOfficerForModal(null)}
+        onRequestAssistance={handleOpenAssistance}
+      />
     </div>
   );
 }
